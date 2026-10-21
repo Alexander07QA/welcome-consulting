@@ -1,0 +1,39 @@
+{
+  "name": "gabi-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "tsc -b --noEmit",
+    "format": "prettier --write src"
+  },
+  "dependencies": {
+    "@react-three/drei": "9.122.0",
+    "@react-three/fiber": "8.18.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "three": "0.170.0",
+    "zustand": "4.5.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@testing-library/react": "16.1.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@types/three": "0.170.0",
+    "@vitejs/plugin-react": "4.7.0",
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "5.1.0",
+    "jsdom": "25.0.1",
+    "prettier": "3.4.2",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.2",
+    "vite": "5.4.21",
+    "vitest": "2.1.9"
+  }
+}

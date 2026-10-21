@@ -1,0 +1,13 @@
+.env
+node_modules/
+dist/
+__pycache__/
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.pyc
+# Fotografía personal de referencia: no se versiona
+img.jpg
+docs/reference/*.jpg
+/LIA_SPEC.pdf
