@@ -11,3 +11,4 @@ __pycache__/
 img.jpg
 docs/reference/*.jpg
 /LIA_SPEC.pdf
+*.egg-info/
