@@ -20,7 +20,10 @@ export function Lights({ time, mobile }: { time: TimeOfDay; mobile: boolean }) {
   const desk = useRef<THREE.PointLight>(null);
   const pendant = useRef<THREE.PointLight>(null);
   const { gl, scene } = useThree();
-  const tmp = useMemo(() => ({ c: new THREE.Color(), s: new THREE.Color(), g: new THREE.Color() }), []);
+  const tmp = useMemo(
+    () => ({ c: new THREE.Color(), s: new THREE.Color(), g: new THREE.Color() }),
+    [],
+  );
 
   const target = useMemo(() => {
     const o = new THREE.Object3D();
@@ -42,7 +45,8 @@ export function Lights({ time, mobile }: { time: TimeOfDay; mobile: boolean }) {
     }
     if (lamp.current) lamp.current.intensity += (p.lamp - lamp.current.intensity) * k;
     if (desk.current) desk.current.intensity += (p.deskLamp - desk.current.intensity) * k;
-    if (pendant.current) pendant.current.intensity += (p.lamp * 0.35 - pendant.current.intensity) * k;
+    if (pendant.current)
+      pendant.current.intensity += (p.lamp * 0.35 - pendant.current.intensity) * k;
     gl.toneMappingExposure += (p.exposure - gl.toneMappingExposure) * k;
     if (scene.background instanceof THREE.Color) scene.background.lerp(tmp.c.set(p.fog), k);
   });
@@ -59,7 +63,8 @@ export function Lights({ time, mobile }: { time: TimeOfDay; mobile: boolean }) {
         target={target}
         intensity={4}
         castShadow
-        shadow-mapSize={[1024, 1024]}
+        // En escritorio, mapa más fino para que pies y piernas dejen sombra nítida.
+        shadow-mapSize={mobile ? [1024, 1024] : [2048, 2048]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.03}
         shadow-camera-left={-6.5}
@@ -80,12 +85,38 @@ export function Lights({ time, mobile }: { time: TimeOfDay; mobile: boolean }) {
         shadow-mapSize={[512, 512]}
         shadow-bias={-0.002}
       />
-      <pointLight ref={desk} position={[2.95, 1.05, -3.7]} color="#ffc98a" intensity={0} distance={4} decay={2} />
-      <pointLight ref={pendant} position={[0, 2.5, -0.7]} color="#ffd49a" intensity={0} distance={7} decay={1.8} />
+      <pointLight
+        ref={desk}
+        position={[2.95, 1.05, -3.7]}
+        color="#ffc98a"
+        intensity={0}
+        distance={4}
+        decay={2}
+      />
+      <pointLight
+        ref={pendant}
+        position={[0, 2.5, -0.7]}
+        color="#ffd49a"
+        intensity={0}
+        distance={7}
+        decay={1.8}
+      />
       {/* Luz suave de rostro, desde el lado de la persona */}
-      <pointLight position={[0.7, 1.95, 0.1]} color={time === 'noche' ? '#ffd2a8' : '#fff0e2'} intensity={time === 'noche' ? 2.6 : 3.2} distance={6} decay={2} />
+      <pointLight
+        position={[0.7, 1.95, 0.1]}
+        color={time === 'noche' ? '#ffd2a8' : '#fff0e2'}
+        intensity={time === 'noche' ? 2.6 : 3.2}
+        distance={6}
+        decay={2}
+      />
       {/* Relleno suave del lado de la cámara */}
-      <pointLight position={[0.5, 2.2, 2.5]} color="#ffe9d2" intensity={time === 'noche' ? 0.25 : 1.2} distance={8} decay={2} />
+      <pointLight
+        position={[0.5, 2.2, 2.5]}
+        color="#ffe9d2"
+        intensity={time === 'noche' ? 0.25 : 1.2}
+        distance={8}
+        decay={2}
+      />
     </>
   );
 }
@@ -104,7 +135,13 @@ export function SunBeam({ time, reducedMotion }: { time: TimeOfDay; reducedMotio
     const floor = corners.map((c) => c.clone().addScaledVector(travel, c.y / -travel.y));
     const pos: number[] = [];
     const fade: number[] = [];
-    const quad = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, d: THREE.Vector3, fa: number[]) => {
+    const quad = (
+      a: THREE.Vector3,
+      b: THREE.Vector3,
+      c: THREE.Vector3,
+      d: THREE.Vector3,
+      fa: number[],
+    ) => {
       for (const [v, f] of [
         [a, fa[0]],
         [b, fa[1]],
@@ -124,7 +161,8 @@ export function SunBeam({ time, reducedMotion }: { time: TimeOfDay; reducedMotio
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     g.setAttribute('fade', new THREE.Float32BufferAttribute(fade, 1));
-    const center = (vs: THREE.Vector3[]) => vs.reduce((a, v) => a.add(v), new THREE.Vector3()).multiplyScalar(0.25);
+    const center = (vs: THREE.Vector3[]) =>
+      vs.reduce((a, v) => a.add(v), new THREE.Vector3()).multiplyScalar(0.25);
     return { geo: g, from: center(corners), to: center(floor) };
   }, []);
 
@@ -164,11 +202,17 @@ export function SunBeam({ time, reducedMotion }: { time: TimeOfDay; reducedMotio
     const halfW = (WINDOW.z1 - WINDOW.z0) / 2;
     const halfH = (WINDOW.y1 - WINDOW.y0) / 2;
     for (let i = 0; i < count; i++) {
-      const [a, b, c, d] = [dust.seeds[i * 4], dust.seeds[i * 4 + 1], dust.seeds[i * 4 + 2], dust.seeds[i * 4 + 3]];
+      const [a, b, c, d] = [
+        dust.seeds[i * 4],
+        dust.seeds[i * 4 + 1],
+        dust.seeds[i * 4 + 2],
+        dust.seeds[i * 4 + 3],
+      ];
       const along = (a + t * 0.004 * (0.5 + d)) % 1;
       const p = from.clone().lerp(to, along * 0.9);
       arr[i * 3] = p.x + Math.sin(t * 0.3 + d * 20) * 0.05;
-      arr[i * 3 + 1] = p.y + (b - 0.5) * halfH * 1.6 * (1 - along * 0.6) + Math.sin(t * 0.21 + a * 30) * 0.04;
+      arr[i * 3 + 1] =
+        p.y + (b - 0.5) * halfH * 1.6 * (1 - along * 0.6) + Math.sin(t * 0.21 + a * 30) * 0.04;
       arr[i * 3 + 2] = p.z + (c - 0.5) * halfW * 1.7 + Math.cos(t * 0.25 + b * 25) * 0.04;
     }
     dust.g.attributes.position.needsUpdate = true;
@@ -233,7 +277,13 @@ export function Curtains({ reducedMotion }: { reducedMotion: boolean }) {
             rotation-y={Math.PI / 2}
             castShadow
           >
-            <meshStandardMaterial color="#f4ecdf" roughness={1} side={THREE.DoubleSide} transparent opacity={0.88} />
+            <meshStandardMaterial
+              color="#f4ecdf"
+              roughness={1}
+              side={THREE.DoubleSide}
+              transparent
+              opacity={0.88}
+            />
           </mesh>
         </group>
       ))}
