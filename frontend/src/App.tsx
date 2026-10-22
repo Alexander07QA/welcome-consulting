@@ -6,7 +6,7 @@ import { Greeting } from './greeting/Greeting';
 import { ConsentScreen } from './consent/ConsentScreen';
 import { CRISIS } from './safety/crisis';
 import { useChatStore } from './store/chatStore';
-import { useSceneStore, type View } from './store/sceneStore';
+import { timeFromClock, useSceneStore, type TimeOfDay, type View } from './store/sceneStore';
 import { endSession, startSession } from './services/conversation';
 import { browserVoiceAvailable, stopSpeaking } from './services/voice';
 
@@ -30,6 +30,9 @@ function readConsent(): boolean {
   }
 }
 
+const NEXT_TIME: Record<TimeOfDay, TimeOfDay> = { dia: 'tarde', tarde: 'noche', noche: 'dia' };
+const TIME_LABEL: Record<TimeOfDay, string> = { dia: 'Día', tarde: 'Tarde', noche: 'Noche' };
+
 export default function App() {
   const [consented, setConsented] = useState(readConsent);
   const urgentOpen = useChatStore((s) => s.urgentOpen);
@@ -42,13 +45,13 @@ export default function App() {
     if (consented) void startSession();
   }, [consented]);
 
-  // Modo tarde/noche sigue el tema del sistema hasta que la persona lo cambie a mano
+  // Día/tarde/noche sigue la hora local hasta que la persona lo cambie a mano
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const on = (e: MediaQueryListEvent) =>
-      !manualTime && setTime(e.matches ? 'noche' : 'tarde', false);
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
+    if (manualTime) return;
+    const tick = () => setTime(timeFromClock(), false);
+    tick();
+    const id = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(id);
   }, [manualTime, setTime]);
 
   useEffect(() => {
@@ -99,9 +102,9 @@ export default function App() {
             <button
               className="btn soft"
               aria-pressed={time === 'noche'}
-              onClick={() => setTime(time === 'tarde' ? 'noche' : 'tarde')}
+              onClick={() => setTime(NEXT_TIME[time])}
             >
-              {time === 'tarde' ? 'Tarde' : 'Noche'}
+              {TIME_LABEL[time]}
             </button>
             {browserVoiceAvailable() && (
               <button

@@ -1,10 +1,15 @@
 import { create } from 'zustand';
 
-export type TimeOfDay = 'tarde' | 'noche';
+export type TimeOfDay = 'dia' | 'tarde' | 'noche';
 export type View = 'frente' | 'cerca' | 'amplia';
 
-const prefersDark = (): boolean =>
-  typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+/** Momento del día según la hora local del dispositivo. */
+export function timeFromClock(d: Date = new Date()): TimeOfDay {
+  const h = d.getHours() + d.getMinutes() / 60;
+  if (h >= 6 && h < 15) return 'dia';
+  if (h >= 15 && h < 18.5) return 'tarde';
+  return 'noche';
+}
 
 interface SceneStore {
   time: TimeOfDay;
@@ -18,7 +23,7 @@ interface SceneStore {
 }
 
 export const useSceneStore = create<SceneStore>((set) => ({
-  time: prefersDark() ? 'noche' : 'tarde',
+  time: timeFromClock(),
   // Arranca en amplia: el saludo inicial acerca la cámara a Gabi y luego pasa a frente.
   view: 'amplia',
   manualTime: false,

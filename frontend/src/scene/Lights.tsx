@@ -7,6 +7,12 @@ import type { TimeOfDay } from '../store/sceneStore';
 
 const SUN_TARGET = new THREE.Vector3(0.2, 0, -1.6);
 
+const BEAM: Record<TimeOfDay, { strength: number; color: string }> = {
+  dia: { strength: 0.8, color: '#fff1d6' },
+  tarde: { strength: 1, color: '#ffd9a0' },
+  noche: { strength: 0.35, color: '#9fb3e6' },
+};
+
 export function Lights({ time, mobile }: { time: TimeOfDay; mobile: boolean }) {
   const sun = useRef<THREE.DirectionalLight>(null);
   const hemi = useRef<THREE.HemisphereLight>(null);
@@ -77,9 +83,9 @@ export function Lights({ time, mobile }: { time: TimeOfDay; mobile: boolean }) {
       <pointLight ref={desk} position={[2.95, 1.05, -3.7]} color="#ffc98a" intensity={0} distance={4} decay={2} />
       <pointLight ref={pendant} position={[0, 2.5, -0.7]} color="#ffd49a" intensity={0} distance={7} decay={1.8} />
       {/* Luz suave de rostro, desde el lado de la persona */}
-      <pointLight position={[0.7, 1.95, 0.1]} color={time === 'tarde' ? '#fff0e2' : '#ffd2a8'} intensity={time === 'tarde' ? 3.2 : 2.6} distance={6} decay={2} />
+      <pointLight position={[0.7, 1.95, 0.1]} color={time === 'noche' ? '#ffd2a8' : '#fff0e2'} intensity={time === 'noche' ? 2.6 : 3.2} distance={6} decay={2} />
       {/* Relleno suave del lado de la cámara */}
-      <pointLight position={[0.5, 2.2, 2.5]} color="#ffe9d2" intensity={time === 'tarde' ? 1.2 : 0.25} distance={8} decay={2} />
+      <pointLight position={[0.5, 2.2, 2.5]} color="#ffe9d2" intensity={time === 'noche' ? 0.25 : 1.2} distance={8} decay={2} />
     </>
   );
 }
@@ -148,10 +154,10 @@ export function SunBeam({ time, reducedMotion }: { time: TimeOfDay; reducedMotio
   const dustMat = useRef<THREE.PointsMaterial>(null);
 
   useFrame(({ clock }, dt) => {
-    const strength = time === 'tarde' ? 1 : 0.35;
+    const strength = BEAM[time].strength;
     const u = beamMat.uniforms.uStrength;
     u.value += (strength - u.value) * (1 - Math.exp(-dt * 3));
-    beamMat.uniforms.uColor.value.set(time === 'tarde' ? '#ffd9a0' : '#9fb3e6');
+    beamMat.uniforms.uColor.value.set(BEAM[time].color);
     if (dustMat.current) dustMat.current.opacity = 0.55 * u.value;
     const t = clock.elapsedTime * (reducedMotion ? 0.3 : 1);
     const arr = dust.g.attributes.position.array as Float32Array;

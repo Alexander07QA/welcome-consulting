@@ -22,6 +22,18 @@ export interface LightingPreset {
 }
 
 export const LIGHTING: Record<TimeOfDay, LightingPreset> = {
+  dia: {
+    sun: 4.6,
+    sunColor: '#fff6e8',
+    hemi: 1.0,
+    hemiSky: '#f4f7ff',
+    hemiGround: '#a88d74',
+    lamp: 0,
+    deskLamp: 0,
+    beam: 0.8,
+    exposure: 1.0,
+    fog: '#eee6da',
+  },
   tarde: {
     sun: 4.2,
     sunColor: '#ffd3a1',
