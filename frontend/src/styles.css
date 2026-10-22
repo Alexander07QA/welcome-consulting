@@ -575,6 +575,14 @@ button {
   }
 }
 
+/* Solo el consultorio, a pantalla completa */
+.app.solo-escena {
+  grid-template-rows: 1fr;
+}
+.app.solo-escena .layout {
+  grid-template-columns: 1fr;
+}
+
 /* Celular: apilado */
 @media (max-width: 860px) {
   .app {
@@ -588,6 +596,14 @@ button {
   .stage {
     height: 50svh;
     min-height: 280px;
+  }
+  .app.solo-escena .stage {
+    height: 100svh;
+  }
+  .greeting {
+    font-size: 16px;
+    padding: 12px 16px;
+    bottom: 6%;
   }
   .chat,
   .consent-backdrop {

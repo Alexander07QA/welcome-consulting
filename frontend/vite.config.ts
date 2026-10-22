@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  // Rutas relativas: el build funciona en cualquier carpeta del hosting (p. ej. /consultorio/).
+  base: './',
   server: {
     port: 5173,
     proxy: {

@@ -18,21 +18,31 @@ interface Shot {
   fov: number;
 }
 
-const SHOTS: Record<View | 'movil', Shot> = {
+const SHOTS: Record<View, Shot> = {
   frente: { pos: new THREE.Vector3(0.28, 1.2, 0.55), look: new THREE.Vector3(-0.08, 0.98, -1.85), fov: 42 },
   cerca: { pos: new THREE.Vector3(0.08, 1.3, -0.72), look: new THREE.Vector3(-0.04, 1.25, -1.85), fov: 36 },
   amplia: { pos: new THREE.Vector3(4.9, 1.75, 3.5), look: new THREE.Vector3(0.4, 0.95, -1.4), fov: 56 },
-  movil: { pos: new THREE.Vector3(0.12, 1.22, -0.15), look: new THREE.Vector3(0, 1.08, -1.85), fov: 46 },
 };
+
+// Pantallas verticales (celular): el ancho visible es poco, así que la amplia mira a lo largo
+// del eje de los dos sillones y la cercana se aleja para que quepan la cara y la mano del saludo.
+const PORTRAIT_SHOTS: Record<View, Shot> = {
+  frente: { pos: new THREE.Vector3(0.12, 1.22, -0.15), look: new THREE.Vector3(0, 1.08, -1.85), fov: 46 },
+  cerca: { pos: new THREE.Vector3(0.02, 1.27, -0.4), look: new THREE.Vector3(-0.1, 1.2, -1.85), fov: 44 },
+  amplia: { pos: new THREE.Vector3(1.5, 1.85, 3.7), look: new THREE.Vector3(0.15, 0.75, -0.4), fov: 64 },
+};
+
+const isPortrait = (w: number, h: number): boolean => w / h < 1.15;
+const shotFor = (view: View, w: number, h: number): Shot =>
+  isPortrait(w, h) ? PORTRAIT_SHOTS[view] : SHOTS[view];
 
 function CameraRig({ view, reducedMotion }: { view: View; reducedMotion: boolean }) {
   const { camera, size, pointer } = useThree();
-  const look = useRef(SHOTS[view].look.clone());
+  const look = useRef(shotFor(view, size.width, size.height).look.clone());
   const tmp = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((_, dt) => {
-    const narrow = size.width / size.height < 1.15;
-    const shot = view === 'frente' && narrow ? SHOTS.movil : SHOTS[view];
+    const shot = shotFor(view, size.width, size.height);
     const k = 1 - Math.exp(-dt * 2.2);
     const par = reducedMotion ? 0.3 : 1;
     tmp.copy(shot.pos);
@@ -69,7 +79,7 @@ export function Scene() {
   const mobile = useMemo(() => window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768, []);
   const [dpr, setDpr] = useState(Math.min(2, window.devicePixelRatio));
   const night = time === 'noche';
-  const [firstShot] = useState(() => SHOTS[view]);
+  const [firstShot] = useState(() => shotFor(view, window.innerWidth, window.innerHeight));
 
   return (
     <Canvas

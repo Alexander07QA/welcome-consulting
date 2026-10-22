@@ -8,6 +8,7 @@ import { buildHeadGeometry, faceZ } from './head';
 import { iris, ribbed, softDot } from '../scene/textures';
 import { between } from '../scene/geometry';
 import { gestureOffsets } from './gestures';
+import { buildHand, handQuaternion, taperedTube } from './arms';
 import { createBlinker } from './idle';
 
 // Avatar provisional de Gabi (sección 10A) con rasgos de la fotografía de referencia.
@@ -61,6 +62,7 @@ function useMats() {
       pearl: new THREE.MeshPhysicalMaterial({ color: PEARL, roughness: 0.18, clearcoat: 1, sheen: 1, sheenColor: new THREE.Color('#ffe9f2') }),
       brow: new THREE.MeshStandardMaterial({ color: BROW, roughness: 0.9, side: THREE.DoubleSide }),
       lash: new THREE.MeshStandardMaterial({ color: '#1c120c', roughness: 0.7 }),
+      nails: new THREE.MeshPhysicalMaterial({ color: '#efc4b6', roughness: 0.3, clearcoat: 0.8 }),
       // El blanco del ojo marca el stencil; iris y brillo solo se pintan dentro de él,
       // así los párpados (la piel) recortan el iris como en un ojo real.
       sclera: new THREE.MeshPhysicalMaterial({
@@ -178,9 +180,28 @@ function radiusAt(y: number): number {
 // Puntos de las extremidades
 const L = {
   shoulder: (s: number) => v(s * 0.185, 1.06, -0.1),
-  elbow: (s: number) => v(s * 0.222, 0.82, -0.065),
-  wrist: (s: number) => v(s * 0.07, 0.715, 0.14),
+  elbow: (s: number) => v(s * 0.205, 0.835, -0.05),
+  wrist: (s: number) => v(s * 0.1, 0.732, 0.165),
 };
+
+/** Manga del brazo (hombro→codo y codo→puño), muñeca y mano en reposo sobre el muslo. */
+function buildArm(s: number) {
+  const sh = L.shoulder(s);
+  const el = L.elbow(s);
+  const wr = L.wrist(s);
+  const dir = wr.clone().sub(el).normalize();
+  const cuff = wr.clone().addScaledVector(dir, -0.016);
+  const upperMid = sh.clone().lerp(el, 0.5).add(v(s * 0.006, 0, 0.004));
+  const foreMid = el.clone().lerp(cuff, 0.5).add(v(0, 0.004, 0));
+  const fingers = v(dir.x * 0.7, -0.12, dir.z);
+  return {
+    upper: taperedTube([sh, upperMid, el], [0.049, 0.046, 0.041]),
+    fore: taperedTube([el, foreMid, cuff], [0.041, 0.037, 0.035]),
+    wrist: taperedTube([cuff.clone().addScaledVector(dir, -0.015), wr.clone().addScaledVector(dir, 0.008)], [0.02, 0.0195], 8, 14),
+    hand: buildHand(s < 0 ? 1 : -1, 'reposo'),
+    handQuat: handQuaternion(fingers, v(0, -1, 0)),
+  };
+}
 
 // Saludo con la mano derecha: brazo hacia el lado y adelante, antebrazo vertical que se mece.
 const R_UPPER = L.elbow(-1).sub(L.shoulder(-1));
@@ -257,6 +278,8 @@ export function PlaceholderAvatar({ position, reducedMotion }: { position: V3; r
       torso: lathe(TORSO, 0, 0.58, 1.155),
       top: lathe(TORSO, 0.004, 0.6, 1.0),
       jeansBand: lathe(TORSO, 0.008, 0.58, 0.7),
+      arms: [1, -1].map(buildArm),
+      waveHand: buildHand(1, 'abierta'),
       legs: [-1, 1].map(legGeometry),
       shirt: lathe(shirtProfile, 0.026, 0.62, 1.12, opening, Math.PI * 2 - opening * 2),
       lapels: [-1, 1].map((s) => tube([edge(s, 1.11, 0.03), edge(s, 1.02, 0.034), edge(s, 0.9, 0.033), edge(s, 0.66, 0.03)], 0.012, 20)),
@@ -404,24 +427,25 @@ export function PlaceholderAvatar({ position, reducedMotion }: { position: V3; r
     hair.uniforms.uAmp.value = amp;
   });
 
-  const upperArm = (s: number) => <Limb a={L.shoulder(s)} b={L.elbow(s)} r={0.053} mat={m.shirt} />;
+  // Brazo por partes: 0 = izquierdo, 1 = derecho (articulado para el saludo).
+  const upperArm = (i: number) => (
+    <>
+      <mesh geometry={body.arms[i].upper} material={m.shirt} castShadow receiveShadow />
+      <mesh position={L.elbow(i === 0 ? 1 : -1).toArray()} material={m.shirt} castShadow>
+        <sphereGeometry args={[0.041, 18, 14]} />
+      </mesh>
+    </>
+  );
 
-  const forearm = (s: number) => {
-    const el = L.elbow(s);
-    const wr = L.wrist(s);
-    const cuff = wr.clone().lerp(el, 0.12);
+  const forearm = (i: number) => {
+    const a = body.arms[i];
     return (
       <>
-        <Limb a={el} b={cuff} r={0.048} mat={m.shirt} />
-        <Limb a={cuff} b={wr} r={0.026} mat={m.skin} />
-        <group ref={s < 0 ? restHandR : undefined}>
-          <Ellipsoid
-            pos={[wr.x - s * 0.02, wr.y - 0.004, wr.z + 0.045]}
-            scale={[0.032, 0.016, 0.05]}
-            rot={[0.1, s * 0.6, 0]}
-            mat={m.skin}
-          />
-          <Ellipsoid pos={[wr.x + s * 0.004, wr.y + 0.006, wr.z + 0.035]} scale={[0.01, 0.009, 0.026]} rot={[0, s * -0.4, 0]} mat={m.skin} />
+        <mesh geometry={a.fore} material={m.shirt} castShadow receiveShadow />
+        <mesh geometry={a.wrist} material={m.skin} castShadow />
+        <group ref={i === 1 ? restHandR : undefined} position={L.wrist(i === 0 ? 1 : -1).toArray()} quaternion={a.handQuat}>
+          <mesh geometry={a.hand.skin} material={m.skin} castShadow receiveShadow />
+          <mesh geometry={a.hand.nails} material={m.nails} />
         </group>
       </>
     );
@@ -473,26 +497,17 @@ export function PlaceholderAvatar({ position, reducedMotion }: { position: V3; r
 
       {/* Brazos: el derecho acompaña el habla y saluda */}
       <group>
-        {upperArm(1)}
-        {forearm(1)}
+        {upperArm(0)}
+        {forearm(0)}
       </group>
       <group ref={upperR} position={L.shoulder(-1).toArray()}>
-        <group position={L.shoulder(-1).negate().toArray()}>{upperArm(-1)}</group>
+        <group position={L.shoulder(-1).negate().toArray()}>{upperArm(1)}</group>
         <group ref={foreR} position={R_UPPER.toArray()}>
-          <group position={L.elbow(-1).negate().toArray()}>{forearm(-1)}</group>
-          {/* Mano abierta del saludo: palma al frente, dedos juntos y pulgar hacia el centro */}
+          <group position={L.elbow(-1).negate().toArray()}>{forearm(1)}</group>
+          {/* Mano abierta del saludo: palma al frente y pulgar hacia el centro */}
           <group ref={waveHandR} position={R_FORE.toArray()} visible={false}>
-            <Ellipsoid pos={[0, 0.045, 0]} scale={[0.036, 0.048, 0.014]} mat={m.skin} />
-            {[-0.022, -0.0075, 0.0075, 0.022].map((x, i) => (
-              <Limb
-                key={x}
-                a={v(x, 0.085, 0)}
-                b={v(x * 1.25, 0.085 + [0.04, 0.05, 0.048, 0.04][i], 0.004)}
-                r={0.0078}
-                mat={m.skin}
-              />
-            ))}
-            <Limb a={v(0.03, 0.03, 0.004)} b={v(0.055, 0.07, 0.012)} r={0.0095} mat={m.skin} />
+            <mesh geometry={body.waveHand.skin} material={m.skin} castShadow />
+            <mesh geometry={body.waveHand.nails} material={m.nails} />
           </group>
         </group>
       </group>

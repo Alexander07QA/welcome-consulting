@@ -12,6 +12,10 @@ import { browserVoiceAvailable, stopSpeaking } from './services/voice';
 
 const Scene = lazy(() => import('./scene/Scene').then((m) => ({ default: m.Scene })));
 
+// Por ahora solo se muestra el consultorio: sin encabezado, panel de conversación ni
+// botón de ayuda urgente. Al volver a activar la conversación, la ayuda urgente vuelve con ella.
+const SHOW_PANELS = false;
+
 const VIEWS: { id: View; label: string }[] = [
   { id: 'frente', label: 'Frente' },
   { id: 'cerca', label: 'Cerca' },
@@ -41,7 +45,8 @@ export default function App() {
   // Modo tarde/noche sigue el tema del sistema hasta que la persona lo cambie a mano
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const on = (e: MediaQueryListEvent) => !manualTime && setTime(e.matches ? 'noche' : 'tarde', false);
+    const on = (e: MediaQueryListEvent) =>
+      !manualTime && setTime(e.matches ? 'noche' : 'tarde', false);
     mq.addEventListener('change', on);
     return () => mq.removeEventListener('change', on);
   }, [manualTime, setTime]);
@@ -68,57 +73,59 @@ export default function App() {
   const breathe = () => setChat({ breathingOpen: true });
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <span className="logo" aria-hidden>
-            G
-          </span>
-          <div>
-            <strong>Gabi</strong>
-            <small>acompañamiento emocional</small>
+    <div className={SHOW_PANELS ? 'app' : 'app solo-escena'}>
+      {SHOW_PANELS && (
+        <header className="topbar">
+          <div className="brand">
+            <span className="logo" aria-hidden>
+              G
+            </span>
+            <div>
+              <strong>Gabi</strong>
+              <small>acompañamiento emocional</small>
+            </div>
           </div>
-        </div>
-        <nav className="actions" aria-label="Opciones">
-          <button className="btn soft" onClick={breathe}>
-            Respirar
-          </button>
-          <div className="segmented" role="group" aria-label="Vista de cámara">
-            {VIEWS.map((v) => (
-              <button key={v.id} aria-pressed={view === v.id} onClick={() => setView(v.id)}>
-                {v.label}
-              </button>
-            ))}
-          </div>
-          <button
-            className="btn soft"
-            aria-pressed={time === 'noche'}
-            onClick={() => setTime(time === 'tarde' ? 'noche' : 'tarde')}
-          >
-            {time === 'tarde' ? 'Tarde' : 'Noche'}
-          </button>
-          {browserVoiceAvailable() && (
+          <nav className="actions" aria-label="Opciones">
+            <button className="btn soft" onClick={breathe}>
+              Respirar
+            </button>
+            <div className="segmented" role="group" aria-label="Vista de cámara">
+              {VIEWS.map((v) => (
+                <button key={v.id} aria-pressed={view === v.id} onClick={() => setView(v.id)}>
+                  {v.label}
+                </button>
+              ))}
+            </div>
             <button
               className="btn soft"
-              aria-pressed={voiceOn}
-              onClick={() => {
-                if (voiceOn) stopSpeaking();
-                setChat({ voiceOn: !voiceOn });
-              }}
+              aria-pressed={time === 'noche'}
+              onClick={() => setTime(time === 'tarde' ? 'noche' : 'tarde')}
             >
-              {voiceOn ? 'Voz activa' : 'Voz apagada'}
+              {time === 'tarde' ? 'Tarde' : 'Noche'}
             </button>
-          )}
-          {consented && (
-            <button className="btn ghost" onClick={() => void erase()}>
-              Borrar mis datos
+            {browserVoiceAvailable() && (
+              <button
+                className="btn soft"
+                aria-pressed={voiceOn}
+                onClick={() => {
+                  if (voiceOn) stopSpeaking();
+                  setChat({ voiceOn: !voiceOn });
+                }}
+              >
+                {voiceOn ? 'Voz activa' : 'Voz apagada'}
+              </button>
+            )}
+            {consented && (
+              <button className="btn ghost" onClick={() => void erase()}>
+                Borrar mis datos
+              </button>
+            )}
+            <button className="btn danger" onClick={() => setChat({ urgentOpen: true })}>
+              Ayuda urgente
             </button>
-          )}
-          <button className="btn danger" onClick={() => setChat({ urgentOpen: true })}>
-            Ayuda urgente
-          </button>
-        </nav>
-      </header>
+          </nav>
+        </header>
+      )}
 
       <main className="layout">
         <section className="stage" aria-label="Consultorio">
@@ -128,7 +135,8 @@ export default function App() {
           </Suspense>
           {breathingOpen && <BreathingGuide onClose={() => setChat({ breathingOpen: false })} />}
         </section>
-        {consented ? <ChatPanel onBreathe={breathe} /> : <ConsentScreen onAccept={accept} />}
+        {SHOW_PANELS &&
+          (consented ? <ChatPanel onBreathe={breathe} /> : <ConsentScreen onAccept={accept} />)}
       </main>
 
       {urgentOpen && (

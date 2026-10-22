@@ -15,3 +15,6 @@ docs/reference/*.png
 /*.jpeg
 /LIA_SPEC.pdf
 *.egg-info/
+
+# Paquete para subir a Hostinger (se genera con npm run build)
+consultorio-hostinger.zip
