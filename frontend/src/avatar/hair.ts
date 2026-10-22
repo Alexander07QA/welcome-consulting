@@ -35,6 +35,8 @@ interface StrandSpec {
   light: number;
   phase: number;
   amp: number;
+  /** Fracción del degradado raíz→puntas que recorre el mechón (y de su vaivén). */
+  tone: number;
 }
 
 function buildStrandSpecs(): StrandSpec[] {
@@ -78,6 +80,47 @@ function buildStrandSpecs(): StrandSpec[] {
         light: front ? 0.55 + r() * 0.35 : r() > 0.6 ? 0.4 + r() * 0.5 : r() * 0.25,
         phase: r() * Math.PI * 2,
         amp: 0.018 + r() * 0.012,
+        tone: 1,
+      });
+    }
+  }
+  return specs.concat(buildCrownSpecs());
+}
+
+// Semiejes de la superficie sobre la que se peina la coronilla (algo más que el casquete).
+const CROWN = { a: 0.106, b: 0.12, c: 0.112 };
+
+/** Punto de la coronilla: theta se abre desde la raya hacia el lado, beta va de la frente a la nuca. */
+function crownPoint(s: number, theta: number, beta: number, lift: number): THREE.Vector3 {
+  const d = new THREE.Vector3(s * Math.sin(theta), Math.cos(theta) * Math.cos(beta), Math.cos(theta) * Math.sin(beta));
+  const surf = 1 / Math.sqrt((d.x / CROWN.a) ** 2 + (d.y / CROWN.b) ** 2 + (d.z / CROWN.c) ** 2);
+  return d.multiplyScalar(surf + lift).add(HEAD_CENTER).add(new THREE.Vector3(0, 0.004, -0.004));
+}
+
+/** Mechones cortos que salen de la raya y cubren la parte de arriba con algo de volumen. */
+function buildCrownSpecs(): StrandSpec[] {
+  const r = rng(98);
+  const specs: StrandSpec[] = [];
+  const N = 46;
+  for (const s of [-1, 1]) {
+    for (let i = 0; i < N; i++) {
+      const beta = THREE.MathUtils.lerp(0.72, -1.15, i / (N - 1)) + (r() - 0.5) * 0.04;
+      const end = 1.15 + r() * 0.25;
+      // Los de adelante se peinan en diagonal hacia atrás; los de la nuca caen casi rectos.
+      const sweep = 0.45 * THREE.MathUtils.clamp((beta + 0.3) / 1.0, 0, 1);
+      const points: THREE.Vector3[] = [];
+      for (let k = 0; k <= 5; k++) {
+        const theta = 0.02 + (end - 0.02) * (k / 5);
+        const lift = 0.002 + 0.006 * Math.sin((Math.PI * k) / 5) + (r() - 0.5) * 0.002;
+        points.push(crownPoint(s, theta, beta - sweep * (k / 5), lift));
+      }
+      specs.push({
+        points,
+        radius: 0.01 + r() * 0.005,
+        light: r() * 0.2,
+        phase: r() * Math.PI * 2,
+        amp: 0.002,
+        tone: 0.3 + r() * 0.1,
       });
     }
   }
@@ -116,13 +159,13 @@ function strandGeometry(spec: StrandSpec): THREE.BufferGeometry {
     // Afinado: raíz delgada, cuerpo pleno, puntas que se adelgazan
     const taper = THREE.MathUtils.lerp(0.55, 1, THREE.MathUtils.smoothstep(u, 0, 0.12)) *
       THREE.MathUtils.lerp(1, 0.25, THREE.MathUtils.smoothstep(u, 0.78, 1));
-    hairColor(u, spec.light, c);
+    hairColor(u * spec.tone, spec.light, c);
     for (let k = 0; k <= RS; k++) {
       const idx = i * (RS + 1) + k;
       v.fromBufferAttribute(pos, idx).sub(center).multiplyScalar(taper).add(center);
       pos.setXYZ(idx, v.x, v.y, v.z);
       colors.set([c.r, c.g, c.b], idx * 3);
-      along[idx] = u;
+      along[idx] = u * spec.tone;
     }
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));

@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { Room } from './Room';
 import { Props } from './Props';
 import { Curtains, Lights, SunBeam } from './Lights';
+import { Visitor } from './Visitor';
 import { Avatar } from '../avatar/Avatar';
 import { avatarController } from '../avatar/rig';
 import { useSceneStore, type View } from '../store/sceneStore';
@@ -19,14 +20,14 @@ interface Shot {
 
 const SHOTS: Record<View | 'movil', Shot> = {
   frente: { pos: new THREE.Vector3(0.28, 1.2, 0.55), look: new THREE.Vector3(-0.08, 0.98, -1.85), fov: 42 },
-  cerca: { pos: new THREE.Vector3(0.1, 1.3, -0.95), look: new THREE.Vector3(0, 1.28, -1.85), fov: 34 },
+  cerca: { pos: new THREE.Vector3(0.08, 1.3, -0.72), look: new THREE.Vector3(-0.04, 1.25, -1.85), fov: 36 },
   amplia: { pos: new THREE.Vector3(4.9, 1.75, 3.5), look: new THREE.Vector3(0.4, 0.95, -1.4), fov: 56 },
   movil: { pos: new THREE.Vector3(0.12, 1.22, -0.15), look: new THREE.Vector3(0, 1.08, -1.85), fov: 46 },
 };
 
 function CameraRig({ view, reducedMotion }: { view: View; reducedMotion: boolean }) {
   const { camera, size, pointer } = useThree();
-  const look = useRef(SHOTS.frente.look.clone());
+  const look = useRef(SHOTS[view].look.clone());
   const tmp = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((_, dt) => {
@@ -68,12 +69,13 @@ export function Scene() {
   const mobile = useMemo(() => window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768, []);
   const [dpr, setDpr] = useState(Math.min(2, window.devicePixelRatio));
   const night = time === 'noche';
+  const [firstShot] = useState(() => SHOTS[view]);
 
   return (
     <Canvas
       shadows="soft"
       dpr={dpr}
-      camera={{ position: SHOTS.frente.pos.toArray(), fov: 42, near: 0.05, far: 60 }}
+      camera={{ position: firstShot.pos.toArray(), fov: firstShot.fov, near: 0.05, far: 60 }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
       onCreated={({ gl, scene }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -90,6 +92,7 @@ export function Scene() {
         <SunBeam time={time} reducedMotion={reducedMotion} />
         <Props night={night} />
         <Avatar position={GABI_POS} reducedMotion={reducedMotion} />
+        <Visitor />
       </Suspense>
       <CameraRig view={view} reducedMotion={reducedMotion} />
     </Canvas>

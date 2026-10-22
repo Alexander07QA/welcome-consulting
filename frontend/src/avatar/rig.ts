@@ -13,6 +13,8 @@ export interface RigState {
   mouthOpen: number;
   mouthWide: number;
   talkUntil: number;
+  /** Saludo con la mano derecha en curso. */
+  wave: { startedAt: number; duration: number } | null;
   breathing: number | null;
   look: { x: number; y: number };
 }
@@ -25,6 +27,7 @@ export const rig: RigState = {
   mouthOpen: 0,
   mouthWide: 0,
   talkUntil: 0,
+  wave: null,
   breathing: null,
   look: { x: 0, y: 0 },
 };
@@ -36,7 +39,7 @@ const VISEME_SHAPE: Record<VisemeName, [open: number, wide: number]> = {
   aa: [0.9, 0.2], E: [0.55, 0.45], I: [0.35, 0.5], O: [0.7, -0.45], U: [0.4, -0.6],
 };
 
-export const avatarController: AvatarController & { talk(ms: number): void } = {
+export const avatarController: AvatarController & { talk(ms: number): void; wave(ms: number): void } = {
   setEmotion(e) {
     rig.emotion = e;
     rig.target = { ...EXPRESSIONS[e] };
@@ -62,5 +65,9 @@ export const avatarController: AvatarController & { talk(ms: number): void } = {
   /** Movimiento de boca sin audio mientras llega el texto. */
   talk(ms) {
     rig.talkUntil = Math.max(rig.talkUntil, performance.now()) + ms;
+  },
+  /** Levanta la mano derecha y saluda durante ms milisegundos. */
+  wave(ms) {
+    rig.wave = { startedAt: performance.now(), duration: ms };
   },
 };

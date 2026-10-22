@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { ChatPanel } from './chat/ChatPanel';
 import { CrisisCard } from './chat/CrisisCard';
 import { BreathingGuide } from './breathing/BreathingGuide';
+import { Greeting } from './greeting/Greeting';
 import { ConsentScreen } from './consent/ConsentScreen';
 import { CRISIS } from './safety/crisis';
 import { useChatStore } from './store/chatStore';
@@ -123,6 +124,7 @@ export default function App() {
         <section className="stage" aria-label="Consultorio">
           <Suspense fallback={<div className="stage-loading">Preparando el consultorio…</div>}>
             <Scene />
+            <Greeting />
           </Suspense>
           {breathingOpen && <BreathingGuide onClose={() => setChat({ breathingOpen: false })} />}
         </section>

@@ -92,6 +92,59 @@ function Sofa({ pos, rotY }: { pos: V3; rotY: number }) {
   );
 }
 
+/** Plato con papaya picada en cubos y un tenedor. */
+function PapayaPlate({ pos }: { pos: V3 }) {
+  const pieces = useMemo(() => {
+    const r = rng(31);
+    const out: { pos: V3; rot: V3; size: V3; color: string }[] = [];
+    const tones = ['#f07f35', '#f39243', '#ec7230', '#f5a052'];
+    for (let i = 0; i < 16; i++) {
+      const layer = i < 11 ? 0 : 1;
+      const a = r() * Math.PI * 2;
+      const d = layer ? r() * 0.022 : 0.012 + r() * 0.038;
+      const s = 0.019 + r() * 0.007;
+      out.push({
+        pos: [Math.cos(a) * d, 0.022 + layer * 0.018 + r() * 0.003, Math.sin(a) * d],
+        rot: [(r() - 0.5) * 0.5, r() * Math.PI, (r() - 0.5) * 0.5],
+        size: [s, s * (0.85 + r() * 0.2), s * (0.9 + r() * 0.3)],
+        color: tones[Math.floor(r() * tones.length)],
+      });
+    }
+    return out;
+  }, []);
+  return (
+    <group position={pos}>
+      <mesh position={[0, 0.006, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.078, 0.055, 0.012, 32]} />
+        <meshPhysicalMaterial color="#f7f3ec" roughness={0.25} clearcoat={0.6} />
+      </mesh>
+      <mesh position={[0, 0.0115, 0]} rotation-x={-Math.PI / 2}>
+        <torusGeometry args={[0.072, 0.004, 8, 40]} />
+        <meshPhysicalMaterial color="#f7f3ec" roughness={0.25} clearcoat={0.6} />
+      </mesh>
+      {pieces.map((p, i) => (
+        <mesh key={i} position={p.pos} rotation={p.rot} castShadow>
+          <boxGeometry args={p.size} />
+          <meshPhysicalMaterial color={p.color} roughness={0.35} clearcoat={0.5} clearcoatRoughness={0.3} />
+        </mesh>
+      ))}
+      {/* Tenedor apoyado en el borde */}
+      <group position={[0.035, 0.022, 0.035]} rotation={[0, -0.8, 0.08]}>
+        <mesh position={[0.05, 0, 0]} rotation-z={Math.PI / 2}>
+          <cylinderGeometry args={[0.0028, 0.0035, 0.09, 8]} />
+          <meshStandardMaterial color="#c9ccd0" metalness={0.9} roughness={0.25} />
+        </mesh>
+        {[-1, 0, 1].map((k) => (
+          <mesh key={k} position={[-0.012, 0, k * 0.0045]} rotation-z={Math.PI / 2}>
+            <cylinderGeometry args={[0.0011, 0.0011, 0.028, 5]} />
+            <meshStandardMaterial color="#c9ccd0" metalness={0.9} roughness={0.25} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
+}
+
 function SideTable({ pos }: { pos: V3 }) {
   return (
     <group position={pos}>
@@ -127,6 +180,7 @@ function SideTable({ pos }: { pos: V3 }) {
         </mesh>
         <Steam />
       </group>
+      <PapayaPlate pos={[-0.11, 0.578, -0.11]} />
       {/* Caja de pañuelos */}
       <group position={[0.09, 0.578, -0.06]} rotation-y={0.5}>
         <mesh position={[0, 0.05, 0]} castShadow>

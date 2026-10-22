@@ -10,5 +10,8 @@ __pycache__/
 # Fotografía personal de referencia: no se versiona
 img.jpg
 docs/reference/*.jpg
+docs/reference/*.jpeg
+docs/reference/*.png
+/*.jpeg
 /LIA_SPEC.pdf
 *.egg-info/

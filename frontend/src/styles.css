@@ -511,6 +511,70 @@ button {
   font-size: 34px;
 }
 
+/* Saludo inicial de Gabi */
+.greeting {
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  transform: translateX(-50%);
+  max-width: min(460px, calc(100% - 32px));
+  padding: 14px 20px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 18px;
+  line-height: 1.4;
+  text-align: center;
+  animation: greeting-in 0.5s ease-out;
+}
+.greeting::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  background: var(--surface);
+  transform: translateX(-50%) rotate(45deg);
+}
+.greeting strong {
+  color: var(--sage);
+  letter-spacing: 0.04em;
+}
+.greeting .heart {
+  display: inline-block;
+  width: 1.05em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.16em;
+  color: var(--terracotta);
+  /* Un solo latido suave al aparecer; sin repetición para que no distraiga. */
+  animation: heart-pop 0.9s ease-out 0.35s both;
+}
+@keyframes greeting-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+}
+@keyframes heart-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Celular: apilado */
 @media (max-width: 860px) {
   .app {
